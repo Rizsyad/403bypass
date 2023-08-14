@@ -1,0 +1,6 @@
+grequests
+colorama
+argparse
+pyfiglet
+ua-generator
+tldextract
