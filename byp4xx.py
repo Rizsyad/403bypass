@@ -1,116 +1,101 @@
-import grequests, argparse, os, sys, ua_generator, tldextract
+import grequests, argparse, os, sys, ua_generator, tldextract, urllib3
 from colorama import init, Fore, Style
 from pyfiglet import Figlet
 
-# INITIALISE COLORAMA
-init()
+def setting_header(headerx):
+    set_header = {
+        'User-Agent': ua_generator.generate(device='desktop', browser=('firefox', 'chrome')).text,
+      #   'Accept-Encoding': urllib3.util.SKIP_HEADER,
+      #   'Connection': urllib3.util.SKIP_HEADER,
+      #   'Accept': urllib3.util.SKIP_HEADER,
+      #   'Content-Length': urllib3.util.SKIP_HEADER,
+    }
+    headers = {**set_header, **headerx}
+    return headers
 
-os.system("cls||clear")
+def initialize_colorama():
+    init()
 
-# DISPLAY BANNER -- START
-custom_fig = Figlet(font='slant')
-print(Fore.CYAN + Style.BRIGHT + custom_fig.renderText('byp4xx') + Style.RESET_ALL)
-print(Fore.GREEN + Style.BRIGHT + "____________________ Rizsyad AR ____________________\n")
+def clear_console():
+    os.system("cls||clear")
 
-print(Fore.GREEN + Style.BRIGHT + "GREEN\t\t: 2xx Status Code" + Style.RESET_ALL)
-print(Fore.YELLOW + Style.BRIGHT + "YELLOW\t\t: 3xx Status Code" + Style.RESET_ALL)
-print(Fore.RED + Style.BRIGHT + "RED\t\t: 4xx Status Code" + Style.RESET_ALL)
-print(Fore.MAGENTA + Style.BRIGHT + "MAGENTA\t\t: 5xx Status Code" + Style.RESET_ALL)
+def display_banner():
+    custom_fig = Figlet(font='slant')
+    print(Fore.CYAN + Style.BRIGHT + custom_fig.renderText('byp4xx') + Style.RESET_ALL)
+    print(Fore.GREEN + Style.BRIGHT + "____________________ Rizsyad AR ____________________\n")
+    print(Fore.GREEN + Style.BRIGHT + "GREEN\t\t: 2xx Status Code" + Style.RESET_ALL)
+    print(Fore.YELLOW + Style.BRIGHT + "YELLOW\t\t: 3xx Status Code" + Style.RESET_ALL)
+    print(Fore.RED + Style.BRIGHT + "RED\t\t: 4xx / 5xx Status Code" + Style.RESET_ALL)
+    print("\n")
 
-print("\n")
-# DISPLAY BANNER -- END
+def create_output_file(results, url):
+    domain = tldextract.extract(url).domain
+    with open(f"output_{domain}.txt", "a") as file:
+        for line in results:
+            file.write(line + "\n")
 
-# HANDLE ARGUMENTS -- START
-parser = argparse.ArgumentParser()
-parser.add_argument("-U", "--url", type=str, help="single URL to scan, ex: http://example.com", required=True)
-parser.add_argument("-D", "--dir", type=str, help="Single directory/path to scan, ex: admin", required=True)
-parser.add_argument("-H", '--header', action="store_true", default=False, help="Header Bypass")
-parser.add_argument('-C', "--protocol", action="store_true", default=False, help="Protocol Bypass")
-parser.add_argument("-P", '--port', action="store_true", default=False, help="Port Bypass")
-parser.add_argument("-M", '--method', action="store_true", default=False, help="HTTP Method Bypass")
-parser.add_argument('-E', "--encode", action="store_true", default=False, help="URL Encode Bypass")
-parser.add_argument("-A", '--all', action="store_true", default=False, help="ALL BYPASSES")
-# parser.add_argument("-U", "--urllist", type=str, help="path to list of URLs, ex: urllist.txt")
-# parser.add_argument("-D", "--dirlist", type=str, help="path to list of directories/paths, ex: dirlist.txt")
+def print_response(url, method, header, status_code, length):
+    results = []
+    color_map = {
+        '2': Fore.GREEN,
+        '3': Fore.YELLOW,
+        '4': Fore.RED,
+    }
+    
+    status_color = color_map.get(str(status_code)[0], Fore.WHITE)
+    colorized_status = f"{status_color}{Style.BRIGHT}{status_code}{Style.RESET_ALL}"
+    target_address = f"{method} --> {url}"
+    info = f"STATUS: {colorized_status}\tSIZE: {length}"
+    info_pure = f"STATUS: {status_code}\tSIZE: {length}"
+    remaining = 100 - len(target_address)
+    
+    print("\n" + target_address + " " * remaining + info)
+    print(f"Header= {header}")
+    
+    results.append("\n" + target_address + " " * remaining + info_pure + f"\nHeader= {header}")
+    create_output_file(results, url)
 
-args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
-# HANDLE ARGUMENTS -- END
+def print_responses(responses):
+    for response in responses:
+        if response is None:
+            continue
+        print_response(response.request.url, response.request.method, response.request.headers, response.status_code, response.headers.get('Content-Length'))
 
-def createfile(results, url):
-   domain = tldextract.extract(url).domain
+def display_banner_title(title):
+    print(Fore.BLUE + Style.BRIGHT + "----------------------" + Style.RESET_ALL)
+    print(Fore.CYAN + Style.BRIGHT + f"[+] {title}" + Style.RESET_ALL)
+    print(Fore.BLUE + Style.BRIGHT + "----------------------" + Style.RESET_ALL)
 
-   with open(f"output_{domain}.txt", "a") as file:
-      for line in results:
-         file.write(line + "\n")
-
-def printout(url, method, header, status_code, length):
-   results = []
-
-   if status_code == 200 or status_code == 201:
-      colour = Fore.GREEN + Style.BRIGHT
-   elif status_code == 301 or status_code == 302:
-      colour = Fore.YELLOW + Style.BRIGHT
-   elif status_code == 403 or status_code == 404:
-      colour = Fore.RED + Style.BRIGHT
-   elif status_code == 500:
-      colour = Fore.MAGENTA + Style.BRIGHT
-   else:
-      colour = Fore.WHITE + Style.BRIGHT
-
-   target_address = f"{method} --> " + url
-   info = f"STATUS: {colour}{status_code}{Style.RESET_ALL}\tSIZE: {length}"
-   info_pure = f"STATUS: {status_code}\tSIZE: {length}"
-   remaining = 100 - len(target_address)
-
-   print("\n" + target_address + " " * remaining + info)
-   print(f"Header= {header}")
-
-   results.append("\n" + target_address + " " * remaining + info_pure + f"\nHeader= {header}")
-   createfile(results, url)
-  
-def printresponse(responses):
-   for response in responses:
-      if response is None:
-         continue
-
-      printout(response.request.url, response.request.method, response.request.headers, response.status_code, response.headers.get('Content-Length'))
-
-def headerBypass(url, path):
-   print(Fore.BLUE + Style.BRIGHT + "----------------------" + Style.RESET_ALL)
-   print(Fore.CYAN + Style.BRIGHT + "[+] HTTP Header Bypass" + Style.RESET_ALL)
-   print(Fore.BLUE + Style.BRIGHT + "----------------------" + Style.RESET_ALL)
-
+def header_bypass(url, path):
+   display_banner_title("HTTP Header Bypass")
+    
    headers = [line.rstrip() for line in open("payload/headers.txt")]
    ips = [line.rstrip() for line in open('payload/ip.txt')]
    requests_list = []
-
+    
    for header in headers:
       for ip in ips:
          headerx = {
             header: ip,
-            'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text
          }
-
+            
          requests_list.append(
-            grequests.get(url+ "/" +path, headers=headerx)
+            grequests.get(url, headers=setting_header(headerx))
          )
-
+    
    requests_list.append(
-      grequests.get(url, headers={'X-Original-URL': "/" + path, 'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text})
+      grequests.get(url, headers=setting_header({'X-Original-URL': "/" + path}))
    )
-
+    
    requests_list.append(
-      grequests.get(url, headers={'X-Rewrite-URL': "/" + path, 'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text})
+       grequests.get(url, headers=setting_header({'X-Original-URL': "/" + path}))
    )
-
+    
    responses = grequests.map(requests_list, size=10)
+   print_responses(responses)
 
-   printresponse(responses)
-
-def portBypass(url):
-   print(Fore.BLUE + Style.BRIGHT + "----------------------" + Style.RESET_ALL)
-   print(Fore.CYAN + Style.BRIGHT + "[+] Port Based Bypass" + Style.RESET_ALL)
-   print(Fore.BLUE + Style.BRIGHT + "----------------------" + Style.RESET_ALL)  
+def port_bypass(url):
+   display_banner_title("Port Based Bypass")
 
    ports = [line.rstrip() for line in open("payload/port.txt")]
    requests_list = []
@@ -127,47 +112,28 @@ def portBypass(url):
    
    responses = grequests.map(requests_list, size=10)
 
-   printresponse(responses)
+   print_responses(responses)
 
-def HTTPMethodBypass(url):
-   print(Fore.BLUE + Style.BRIGHT + "----------------------" + Style.RESET_ALL)
-   print(Fore.CYAN + Style.BRIGHT + "[+] HTTP Method Bypass" + Style.RESET_ALL)
-   print(Fore.BLUE + Style.BRIGHT + "----------------------" + Style.RESET_ALL)  
+def method_bypass(url):
+   display_banner_title("HTTP Method Bypass")
    
+   verbs = [line.rstrip() for line in open("payload/verbs.txt")]
    requests_list = []
+   headers = {
+      'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text
+   }
 
-   requests_list.append(
-      grequests.get(url, headers={'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text})
-   )
-
-   requests_list.append(
-      grequests.post(url, headers={'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text})
-   )
-
-   requests_list.append(
-      grequests.put(url, headers={'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text})
-   )
-
-   requests_list.append(
-      grequests.delete(url, headers={'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text})
-   )
-
-   requests_list.append(
-      grequests.head(url, headers={'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text})
-   )
-
-   requests_list.append(
-      grequests.patch(url, headers={'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text})
-   )
+   for verb in verbs:
+      requests_list.append(
+         grequests.request(verb, url=url, headers=headers)
+      )
 
    responses = grequests.map(requests_list, size=10)
 
-   printresponse(responses)
+   print_responses(responses)
 
-def ProtocolBypass(url, path):
-   print(Fore.BLUE + Style.BRIGHT + "----------------------" + Style.RESET_ALL)
-   print(Fore.CYAN + Style.BRIGHT + "[+] Protocol Based Bypass" + Style.RESET_ALL)
-   print(Fore.BLUE + Style.BRIGHT + "----------------------" + Style.RESET_ALL)
+def protocol_bypass(url, path):
+   display_banner_title("Protocol Based Bypass")
 
    requests_list = []
    domain = tldextract.extract(url).domain
@@ -194,12 +160,10 @@ def ProtocolBypass(url, path):
 
    responses = grequests.map(requests_list, size=10)
 
-   printresponse(responses)
+   print_responses(responses)
       
-def URLEncodeBypass(url, path):
-   print(Fore.BLUE + Style.BRIGHT + "----------------------" + Style.RESET_ALL)
-   print(Fore.CYAN + Style.BRIGHT + "[+]  URL Encode Bypass" + Style.RESET_ALL)
-   print(Fore.BLUE + Style.BRIGHT + "----------------------" + Style.RESET_ALL)
+def url_bypass(url, path):
+   display_banner_title("URL Encode Bypass")
 
    end_urlendcode = [line.rstrip() for line in open("payload/end_urlencode.txt")]
    requests_list = []
@@ -212,28 +176,51 @@ def URLEncodeBypass(url, path):
 
    responses = grequests.map(requests_list, size=10)
 
-   printresponse(responses)
+   print_responses(responses)
 
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-U", "--url", type=str, help="single URL to scan, ex: http://example.com", required=True)
+    parser.add_argument("-D", "--dir", type=str, help="Single directory/path to scan, ex: admin", required=True)
+    parser.add_argument("-H", '--header', action="store_true", default=False, help="Header Bypass")
+    parser.add_argument('-C', "--protocol", action="store_true", default=False, help="Protocol Bypass")
+    parser.add_argument("-P", '--port', action="store_true", default=False, help="Port Bypass")
+    parser.add_argument("-M", '--method', action="store_true", default=False, help="HTTP Method Bypass")
+    parser.add_argument('-E', "--encode", action="store_true", default=False, help="URL Encode Bypass")
+    parser.add_argument("-A", '--all', action="store_true", default=False, help="ALL BYPASSES")
+    args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+    
+    print(f"Target: {args.url}\nPath: {args.dir}\n")
+
+    if args.header and not args.all:
+        header_bypass(args.url, args.dir)
+
+    if args.protocol and not args.all:
+        protocol_bypass(args.url, args.dir)
+
+    if args.port and not args.all:
+        port_bypass(args.url + "/" + args.dir)
+
+    if args.method and not args.all:
+        method_bypass(args.url + "/" + args.dir)
+
+    if args.encode and not args.all:
+        url_bypass(args.url, args.dir)
+
+    if args.all and not any([args.header, args.port, args.method, args.encode, args.protocol]):
+      header_bypass(args.url, args.dir)
+      protocol_bypass(args.url, args.dir)
+      port_bypass(args.url + "/" + args.dir)
+      method_bypass(args.url + "/" + args.dir)
+      url_bypass(args.url, args.dir)
 
 if __name__ == "__main__":
-   if args.header and args.all == False:
-      headerBypass(args.url, args.dir)
+   clear_console()
+   initialize_colorama()
+   display_banner()
+   main()
 
-   if args.protocol and args.all == False:
-      ProtocolBypass(args.url, args.dir)
 
-   if args.port and args.all == False:
-      portBypass(args.url + "/" + args.dir)
 
-   if args.method and args.all == False:
-      HTTPMethodBypass(args.url + "/" + args.dir)
 
-   if args.encode and args.all == False:
-      URLEncodeBypass(args.url, args.dir)
 
-   if args.all and args.header == False and args.port == False and args.method == False and args.encode == False and args.protocol == False:
-      headerBypass(args.url, args.dir)
-      ProtocolBypass(args.url, args.dir)
-      portBypass(args.url + "/" + args.dir)
-      HTTPMethodBypass(args.url + "/" + args.dir)
-      URLEncodeBypass(args.url, args.dir)

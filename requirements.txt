@@ -4,3 +4,4 @@ argparse
 pyfiglet
 ua-generator
 tldextract
+urllib3

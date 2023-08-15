@@ -75,8 +75,8 @@ optional arguments:
 
 ## Installation
 
-- git clone https://github.com/Rizsyad/403bypass.git
-- cd 403bypass
+- git clone https://github.com/Rizsyad/byp4xx.git
+- cd byp4xx
 - pip3 install -r requirements.txt
 
 ## Features
