@@ -103,11 +103,10 @@ def port_bypass(url):
    for port in ports:
       headerx = {
          'X-Forwarded-Port': port,
-         'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text
       }
       
       requests_list.append(
-         grequests.get(url, headers=headerx)
+         grequests.get(url, headers=setting_header(headerx))
       )
    
    responses = grequests.map(requests_list, size=10)
@@ -119,13 +118,10 @@ def method_bypass(url):
    
    verbs = [line.rstrip() for line in open("payload/verbs.txt")]
    requests_list = []
-   headers = {
-      'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text
-   }
-
+   
    for verb in verbs:
       requests_list.append(
-         grequests.request(verb, url=url, headers=headers)
+         grequests.request(verb, url=url, headers=setting_header({}))
       )
 
    responses = grequests.map(requests_list, size=10)
@@ -144,18 +140,18 @@ def protocol_bypass(url, path):
    ]
 
    header_schema = [
-      {'X-Forwarded-Scheme': 'http', 'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text},
-      {'X-Forwarded-Scheme': 'https', 'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text},
+      {'X-Forwarded-Scheme': 'http'},
+      {'X-Forwarded-Scheme': 'https'},
    ]
 
    for urls in url_list:
       requests_list.append(
-         grequests.get(urls, headers={'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text}, verify=False)
+         grequests.get(urls, headers=setting_header({}), verify=False)
       )
 
    for headerx in header_schema:
       requests_list.append(
-         grequests.get(url + "/" + path, headers=headerx)
+         grequests.get(url + "/" + path, headers=setting_header(headerx))
       )
 
    responses = grequests.map(requests_list, size=10)
@@ -171,7 +167,7 @@ def url_bypass(url, path):
    for end in end_urlendcode:
       u = f"{url}/{path}{end}"
       requests_list.append(
-         grequests.get(u, headers={'Payloads': u,'User-Agent': ua_generator.generate(device='desktop', browser=('firefox','chrome')).text}, allow_redirects=False, timeout=5)
+         grequests.get(u, headers=setting_header({'Payloads': u}), allow_redirects=False, timeout=5)
       )
 
    responses = grequests.map(requests_list, size=10)
